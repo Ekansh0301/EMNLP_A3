@@ -1,0 +1,582 @@
+\documentclass[11pt,a4paper]{article}
+
+% ── XeLaTeX fonts ─────────────────────────────────────────────────────────────
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont[Scale=0.92]{TeX Gyre Heros}
+\setmonofont[Scale=0.82]{TeX Gyre Cursor}
+\usepackage{unicode-math}
+\setmathfont{TeX Gyre Pagella Math}
+
+% ── microtype: only protrusion works with XeLaTeX ────────────────────────────
+\usepackage[protrusion=true,final]{microtype}
+
+% ── Layout ────────────────────────────────────────────────────────────────────
+\usepackage[top=0.82in,bottom=0.82in,left=0.88in,right=0.88in]{geometry}
+\usepackage{parskip}
+\emergencystretch=2.8em
+
+% ── Tables & figures ──────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+
+% ── Math ──────────────────────────────────────────────────────────────────────
+\usepackage{amsmath}
+
+% ── Colour ────────────────────────────────────────────────────────────────────
+\usepackage{xcolor}
+\definecolor{hblue}{RGB}{22,48,88}
+\definecolor{rowgray}{RGB}{245,245,248}
+\definecolor{crimson}{RGB}{178,28,28}
+\definecolor{muted}{RGB}{95,100,115}
+
+% ── Headers, links, lists ─────────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\usepackage[hidelinks,colorlinks=true,
+            linkcolor=hblue,urlcolor=hblue,citecolor=hblue]{hyperref}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+% ── Caption style ─────────────────────────────────────────────────────────────
+\captionsetup{font=small,labelfont={bf,color=hblue},labelsep=period,skip=5pt}
+\captionsetup[sub]{font=footnotesize,labelfont=bf,skip=2pt}
+
+% ── Header / footer ───────────────────────────────────────────────────────────
+\pagestyle{fancy}\fancyhf{}
+\lhead{\small\color{muted}EMNLP Evaluation Methods -- Assignment 3}
+\rhead{\small\color{muted}En$\to$Hi Machine Translation Robustness}
+\cfoot{\small\color{muted}\thepage}
+\renewcommand{\headrulewidth}{0.35pt}
+
+% ── Section styling ───────────────────────────────────────────────────────────
+\titleformat{\section}{\large\bfseries\color{hblue}}
+  {\thesection}{0.65em}{}[{\color{hblue!30}\titlerule[0.5pt]}]
+\titleformat{\subsection}{\normalsize\bfseries\color{hblue!85}}
+  {\thesubsection}{0.55em}{}
+\titleformat{\paragraph}[runin]{\normalsize\bfseries\color{hblue!70}}
+  {}{0em}{}[.\enspace]
+\titlespacing{\section}{0pt}{11pt}{5pt}
+\titlespacing{\subsection}{0pt}{7pt}{3pt}
+\titlespacing{\paragraph}{0pt}{5pt}{0pt}
+
+% ── Table helpers ─────────────────────────────────────────────────────────────
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\renewcommand{\arraystretch}{1.20}
+\setlist{noitemsep,topsep=2pt,leftmargin=1.4em}
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+
+% =============================================================================
+\begin{document}
+\thispagestyle{empty}
+
+% ── Title (simple, no colourbox) ──────────────────────────────────────────────
+\begin{center}
+  {\color{hblue}\rule{\linewidth}{1.8pt}}\\[7pt]
+  {\LARGE\bfseries\color{hblue}
+    Stress Testing and Robustness of NLP Evaluation Metrics}\\[5pt]
+  {\large Evaluation Methods for NLP: Assignment 3}\\[5pt]
+  {\normalsize
+    \textbf{Task:} English $\to$ Hindi Machine Translation
+    \quad$\cdot$\quad
+    \textbf{Dataset:} IITB English-Hindi Corpus}\\[3pt]
+  {\small
+    \textbf{Roll No.:}~2023114007
+    \quad$\cdot$\quad
+    \textbf{Code:}~\url{https://github.com/...}}\\[7pt]
+  {\color{hblue!40}\rule{\linewidth}{0.6pt}}
+\end{center}
+\vspace{3pt}
+
+% =============================================================================
+\section{Dataset Construction}
+
+\subsection{Source Dataset}
+
+The \textbf{IITB English-Hindi Parallel Corpus}
+(\texttt{cfilt/iitb-english-hindi}; Kunchukuttan et al., 2018) provides
+over 1.6 million sentence pairs spanning news, government, and web domains.
+Three hundred sentence pairs were sampled from the held-out test split of
+2,507 pairs, yielding stable corpus-level metric estimates with 95\%
+bootstrap CI widths averaging $\approx 2.6$ BLEU points.
+
+\subsection{Dataset Variants}
+
+Three versions of the test set were constructed, all sharing \textbf{identical
+Hindi reference translations} to keep scores directly comparable across
+conditions. A per-sentence \textbf{modification tracker} verified that each
+perturbation actually altered the source text (Figure~\ref{fig:modrate}).
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=0.45\linewidth]{plot0_modification_rates.png}
+  \caption{Perturbation coverage per variant. Surface: 92.3\% of sentences
+    altered; Distributional: 78.3\%. Both exceed the 50\% design threshold.}
+  \label{fig:modrate}
+\end{figure}
+
+\paragraph{Variant 1 (Original).}
+Unmodified English source sentences forming the clean-condition baseline.
+
+\paragraph{Variant 2 (Surface-Perturbed).}
+Four character- and token-level operations at a \textbf{20\% per-token noise
+rate}: adjacent character transposition (\emph{affected} $\to$
+\emph{affecfted}), random deletion, keyboard-adjacent insertion, and character
+repetition (\emph{companies} $\to$ \emph{cojmpanies}). Whole-word deletion
+(3\% probability) and adjacent word-order swaps (20\% sentence-level) were
+additionally applied to simulate OCR errors and fast-input noise.
+
+\paragraph{Variant 3 (Distribution-Shifted).}
+Three lexical and demographic transformations composed in sequence:
+
+\begin{table}[htbp]\centering\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{L{3.6cm}L{4.8cm}L{3.4cm}}
+\toprule
+\textbf{Operation} & \textbf{Configuration} & \textbf{Example}\\
+\midrule
+Formal $\to$ Informal register
+  & 45-pair substitution lexicon
+  & \emph{subsequently} $\to$ \emph{then}\\
+Hinglish code-mixing
+  & 42-token lexicon, 35\% per-token rate
+  & \emph{friend} $\to$ \emph{dost}\\
+Gender swap (M$\to$F)
+  &  bidirectional transform
+  & \emph{he / John} $\to$ \emph{she / Jane}\\
+\bottomrule
+\end{tabular}
+\caption{Distributional shift operations and configuration.}
+\label{tab:distrib}
+\end{table}
+
+The \textbf{bidirectional M$\to$F ; F$\to$M} gender transform creates clean minimal
+pairs: every male probe sentence has a female counterpart differing only in
+gender tokens.
+
+% =============================================================================
+\section{Models}
+
+Three publicly available En$\to$Hi MT systems of increasing linguistic
+specialisation were evaluated. \textbf{All models used identical generation
+parameters} (\texttt{num\_beams\,=\,4}, \texttt{max\_new\_tokens\,=\,256}).
+
+\begin{table}[htbp]\centering\small\setlength{\tabcolsep}{5pt}
+\begin{tabular}{clcl}
+\toprule
+\textbf{\#} & \textbf{Model} & \textbf{Params} & \textbf{Training focus}\\
+\midrule
+M1 & \texttt{Helsinki-NLP/opus-mt-en-hi} (MarianMT)
+   & 74M  & OPUS general-domain parallel data\\
+M2 & \texttt{facebook/nllb-200-distilled-600M} (NLLB-200)
+   & 600M & CCNet / FLORES, 200 languages\\
+M3 & \texttt{ai4bharat/indictrans2-en-indic-dist-200M} (IndicTrans2)
+   & 200M & IndicCorp + Samanantar (Indic-specific)\\
+\bottomrule
+\end{tabular}
+\caption{MT models. IndicTrans2 uses IndicTransToolkit for pre/post-processing.}
+\label{tab:models}
+\end{table}
+
+% =============================================================================
+\section{Evaluation Metrics}
+
+\paragraph{BLEU} (Papineni et al., 2002).
+Corpus-level 1--4-gram precision via SacreBLEU (\texttt{tokenize\,=\,"13a"}).
+\textbf{Word-boundary matching fails on any character-level corruption}, making
+BLEU the most fragile of the three metrics. Scores 0--100; 95\% bootstrap CIs
+(1,000 resamples) reported throughout.
+
+\paragraph{chrF++} (Popovic, 2015; \texttt{word\_order\,=\,2}).
+Character n-gram F-score with bigram word-level precision/recall.
+\textbf{Substantially more robust for Devanagari} because inflected word forms
+rarely match references at the word boundary even when semantically correct.
+95\% bootstrap CIs reported. Scores 0--100.
+
+\paragraph{COMET-DA} (\texttt{Unbabel/wmt22-comet-da}).
+Learned neural metric trained on WMT22 Direct Assessment judgements.
+Encodes source, hypothesis, and reference jointly in XLM-R multilingual space.
+\textbf{Most robust to surface variation}; operates on semantic proximity
+rather than surface form. Mean and $\sigma$ from segment-level scores reported.
+
+\paragraph{COMET-QE} (\texttt{Unbabel/wmt22-cometkiwi-da}).
+Reference-free Quality Estimation scoring only (source, hypothesis) pairs.
+Used exclusively for bias probes where no gold Hindi references exist.
+
+% =============================================================================
+\section{Evaluation Results}
+
+\subsection{Main Results}
+
+\begin{table}[htbp]\centering\small\setlength{\tabcolsep}{4pt}
+\caption{Metric scores across all conditions. BLEU and chrF++: 95\%
+  bootstrap CI in brackets for Original. COMET: mean $\pm\,\sigma$.
+  $\Delta$ columns express percentage change from Original.}
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Metric} & \textbf{Model}
+  & \textbf{Original} & \textbf{Surface} & \textbf{Distrib.}
+  & \textbf{$\Delta$ Surf.} & \textbf{$\Delta$ Dist.}\\
+\midrule
+\rowcolor{rowgray}
+BLEU & MarianMT
+  & 10.47\;[9.13, 11.73] & 7.12 & 8.40
+  & \textcolor{crimson}{\bfseries$-32.0\%$} & $-19.8\%$\\
+BLEU & NLLB-200
+  & 22.65\;[20.99, 24.40] & 19.20 & 20.89
+  & $-15.2\%$ & $-7.8\%$\\
+\rowcolor{rowgray}
+BLEU & IndicTrans2
+  & 26.05\;[24.07, 27.89] & 20.48 & 24.31
+  & $-21.4\%$ & $-6.7\%$\\
+\midrule
+chrF++ & MarianMT
+  & 30.95\;[29.32, 32.33] & 25.28 & 28.35
+  & \textcolor{crimson}{$-18.3\%$} & $-8.4\%$\\
+\rowcolor{rowgray}
+chrF++ & NLLB-200
+  & 48.67\;[47.20, 50.25] & 44.52 & 46.87
+  & $-8.5\%$ & $-3.7\%$\\
+chrF++ & IndicTrans2
+  & 51.38\;[49.81, 52.94] & 45.72 & 49.58
+  & $-11.0\%$ & $-3.5\%$\\
+\midrule
+\rowcolor{rowgray}
+COMET & MarianMT   & $0.603\pm0.157$ & 0.525 & 0.557
+  & $-12.9\%$ & $-7.6\%$\\
+COMET & NLLB-200   & $0.807\pm0.085$ & 0.762 & 0.782
+  & $-5.6\%$ & $-3.1\%$\\
+\rowcolor{rowgray}
+COMET & IndicTrans2 & $0.821\pm0.079$ & 0.761 & 0.790
+  & $-7.3\%$ & $-3.8\%$\\
+\bottomrule
+\end{tabular}
+\label{tab:main}
+\end{table}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{plot1_metrics_with_ci.png}
+  \caption{BLEU, chrF++, and COMET scores with CI and $\sigma$ bars
+    per model and dataset variant.}
+  \label{fig:bar}
+\end{figure}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{plot2_heatmaps.png}
+  \caption{Score heatmaps (model $\times$ dataset variant). Colour
+    intensity directly encodes quality; the Original-to-Surface step
+    is clearly visible in every cell.}
+  \label{fig:heat}
+\end{figure}
+
+\subsection{Inter-Model Comparison}
+
+\textbf{IndicTrans2 achieves the highest scores} across all metrics and
+conditions. NLLB-200 is a strong multilingual second. MarianMT not only
+underperforms but is markedly \textbf{inconsistent}: segment-level COMET
+$\sigma = 0.157$ is twice that of the other two models ($\sigma \leq 0.085$),
+indicating erratic quality across sentence types rather than uniform weakness
+(Figure~\ref{fig:boxdeg}, left panel).
+
+A key inter-metric discrepancy is also present: BLEU places MarianMT
+$2.5\times$ below NLLB, yet COMET places it only $1.34\times$ below.
+\textbf{BLEU systematically exaggerates the performance gap} by penalising
+Devanagari surface-form differences that COMET's semantic encoder absorbs
+without quality penalty.
+
+\begin{figure}[htbp]\centering
+  \begin{subfigure}[b]{0.50\linewidth}
+    \includegraphics[width=\linewidth]{plot4_segment_distributions.png}
+    \caption{Segment COMET and sentence BLEU distributions.}
+    \label{fig:box}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{plot3_degradation.png}
+    \caption{Percentage degradation vs Original.}
+    \label{fig:deg}
+  \end{subfigure}
+  \caption{MarianMT's wide IQR reflects segment-level inconsistency.
+    Degradation bars confirm that surface perturbations cause larger drops
+    than distributional shift for every model-metric combination.}
+  \label{fig:boxdeg}
+\end{figure}
+
+\subsection{Surface and Distributional Perturbation Effects}
+
+The fragility hierarchy is \textbf{consistent across all three models}:
+\[
+  \bigl|\Delta\text{BLEU}\bigr| \;>\;
+  \bigl|\Delta\text{chrF++}\bigr| \;>\;
+  \bigl|\Delta\text{COMET}\bigr|
+  \quad\text{for both perturbation types.}
+\]
+BLEU degrades 1.5--2.4$\times$ more than chrF++ and 2.0--2.5$\times$ more
+than COMET under surface noise. This ordering follows from each metric's
+architecture: BLEU's word-boundary precision is maximally exposed to character
+corruption, chrF++ loses only affected character n-grams, and COMET's XLM-R
+encoder absorbs mild surface variation with minimal semantic displacement.
+
+Distributional shift produces \textbf{consistent, non-trivial degradation}
+across all models, yet remains less damaging than surface noise in every
+condition. The residual 21.7\% of unmodified sentences slightly attenuates
+corpus-level drops, meaning the per-sentence effect for truly modified
+sentences is proportionally larger than the reported values.
+
+% =============================================================================
+\section{Robustness Analysis}
+
+\subsection{BLEU and COMET Correlation}
+
+\begin{figure}[htbp]\centering
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{plot5_bleu_comet_correlation.png}
+    \caption{BLEU vs COMET-DA with 95\% CI whiskers on BLEU.}
+    \label{fig:corr}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.48\linewidth}
+    \includegraphics[width=\linewidth]{plot7_radar.png}
+    \caption{Radar metric profiles per model.}
+    \label{fig:radar}
+  \end{subfigure}
+  \caption{BLEU and COMET broadly agree on model ranking but diverge
+    on magnitude. The radar charts confirm COMET separates MarianMT
+    from the other two models more sharply than BLEU does.}
+  \label{fig:corrradar}
+\end{figure}
+
+While BLEU and COMET agree on model ranking, the scatter reveals
+\textbf{systematic magnitude divergences}. NLLB-200 and IndicTrans2 in the
+Original condition differ by 3.4 BLEU points but only 0.014 COMET points,
+indicating that the BLEU gap is largely attributable to Devanagari
+surface-form differences that COMET treats as semantically equivalent.
+NLLB-200 Surface-Perturbed and IndicTrans2 Distribution-Shifted share
+similar COMET values ($\approx 0.78$) despite a 5-point BLEU gap,
+confirming \textbf{BLEU overestimates quality differences} at moderate
+noise levels.
+
+\subsection{Sentence Length Bias}
+
+\begin{figure}[htbp]\centering
+  \includegraphics[width=\linewidth]{plot8_length_vs_comet.png}
+  \caption{Source sentence length versus segment COMET with linear trend
+    lines and Pearson $r$ per variant. Lines are near-superimposed within
+    each model panel, confirming length bias is model-intrinsic.}
+  \label{fig:length}
+\end{figure}
+
+A negative correlation between source sentence length and segment COMET
+is present for all models. The critical finding is that Pearson $r$ is
+\textbf{nearly invariant across dataset variants within each model}
+(Table~\ref{tab:pearson}), ruling out a metric-perturbation interaction.
+\textbf{Length bias is a model quality property}: MarianMT is most
+length-sensitive ($r \approx -0.28$), while NLLB-200 shows near-zero
+dependence ($r \approx -0.09$).
+
+\begin{table}[htbp]\centering\small
+\caption{Pearson $r$: source sentence length vs segment COMET per variant.}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Original} & \textbf{Surface} & \textbf{Distrib.}\\
+\midrule
+MarianMT    & $-0.30$ & $-0.27$ & $-0.26$\\
+NLLB-200    & $-0.16$ & $-0.07$ & $-0.03$\\
+IndicTrans2 & $-0.19$ & $-0.09$ & $-0.10$\\
+\bottomrule
+\end{tabular}
+\label{tab:pearson}
+\end{table}
+
+% =============================================================================
+\section{Bias and Fairness Analysis}
+
+Five probe categories of 20 sentences each were constructed for gender,
+register, and code-mixing bias evaluation. COMET-QE was used throughout as
+no gold Hindi references exist. The gender probe applies a \textbf{fully
+unidirectional M$\to$F transform}, and significance is assessed with the
+Mann-Whitney U test.
+
+\begin{figure}[htbp]\centering
+  \begin{subfigure}[b]{0.57\linewidth}
+    \includegraphics[width=\linewidth]{plot6a_bias_cometqe.png}
+    \caption{COMET-QE per category (mean $\pm\,\sigma$, $N=20$/cat.).}
+    \label{fig:biasbar}
+  \end{subfigure}\hfill
+  \begin{subfigure}[b]{0.41\linewidth}
+    \includegraphics[width=\linewidth]{plot6b_gender_parity.png}
+    \caption{Gender parity: gap = 0.0015, $p = 0.213$.}
+    \label{fig:gender}
+  \end{subfigure}
+  \caption{Reference-free quality estimation across bias probe categories.
+    Code-mixed inputs produce the \textbf{largest penalty and highest
+    within-category variance}. Gender difference is not statistically
+    significant.}
+  \label{fig:bias}
+\end{figure}
+
+\paragraph{Gender parity.}
+The COMET-QE difference between male (0.8845) and female (0.8830) probe
+sentences is \textbf{0.0015}, confirmed non-significant by Mann-Whitney U
+($p = 0.213$, $\alpha = 0.05$). With a 100\% unidirectional transform and
+$N = 20$ per category, this is a methodologically controlled null result:
+\textbf{IndicTrans2 exhibits no detectable gender bias} in estimated
+translation quality.
+
+\paragraph{Code-mixing as the dominant fairness concern.}
+Hinglish inputs produce a reduction of $\mathbf{-0.0298}$ relative to the
+male baseline -- approximately \textbf{$20\times$ the gender gap}. The
+standard deviation for code-mixed probes ($\sigma = 0.054$) is more than
+three times that of any other category, reflecting high within-probe
+variance: sentences whose Romanised Hindi words are covered by the model's
+Devanagari vocabulary translate adequately, while out-of-vocabulary tokens
+cause quality collapse. This is consistent with the \textbf{model's training
+distribution being concentrated on Devanagari-script text}.
+
+\paragraph{Register effects.}
+The formal-to-informal quality gap ($\Delta = -0.0111$) is substantive
+compared to the gender difference but modest relative to code-mixing,
+indicating the model handles \textbf{vocabulary-level register variation
+considerably better} than script-level mixing.
+
+% =============================================================================
+\section{Error Analysis}
+
+\begin{table}[htbp]\centering\small\setlength{\tabcolsep}{3pt}
+\caption{Representative MarianMT errors under surface perturbation, ranked
+  by COMET-DA drop. $C_{\text{o}}$ and $C_{\text{s}}$: segment COMET for
+  Original and Surface respectively. S-Mod / D-Mod: whether each
+  perturbation was active for that sentence.}
+\begin{tabularx}{\linewidth}{L{3.3cm}L{3.3cm}C{0.82cm}C{0.82cm}C{0.72cm}%
+  C{0.72cm}C{0.72cm}}
+\toprule
+\textbf{Source (original)} & \textbf{Source (perturbed)}
+  & $C_{\text{o}}$ & $C_{\text{s}}$ & $\Delta C$
+  & S & D\\
+\midrule
+\emph{Other than this, no one can say anything more.}
+  & \emph{Oher than this, no onne can say anythihng more.}
+  & 0.927 & 0.350 & \textcolor{crimson}{\bfseries$-0.578$} & Y & Y\\[2pt]
+\emph{Very few companies have received this award for so many consecutive years.}
+  & \emph{VVery few cojmpanies hacve received this awad\ldots}
+  & 0.944 & 0.441 & \textcolor{crimson}{\bfseries$-0.504$} & Y & Y\\[2pt]
+\emph{It is no surprise that the idea appeals to urban liberals\ldots}
+  & \emph{It is no that surprise the ieda appeals\ldots}
+  & 0.733 & 0.298 & \textcolor{crimson}{$-0.436$} & Y & Y\\[2pt]
+\emph{Normal life has also been affected by the cold.}
+  & \emph{Normal life has also been fafected by thwe cold.}
+  & 0.915 & 0.492 & $-0.423$ & Y & \textbf{N}\\
+\bottomrule
+\end{tabularx}
+\label{tab:errors}
+\end{table}
+
+\paragraph{Lexical hallucination under compound corruption.}
+When multiple tokens are simultaneously garbled (Example 1, $\Delta C =
+-0.578$), the encoder cannot construct a coherent source representation and the
+decoder produces semantically unrelated Hindi output. \textbf{BLEU assigns
+0.00 while COMET assigns 0.35}, illustrating COMET's non-zero floor for
+catastrophically failed translations -- a regime where BLEU's binary signal
+is arguably more informative.
+
+\paragraph{Verb-argument structure collapse.}
+Word-order corruption at a constituent boundary (Example 3, $\Delta C =
+-0.436$: \emph{``no that surprise the ieda''}) causes the model to mis-parse
+the syntactic structure, generating a translation that \textbf{inverts the
+subject-predicate relationship} in the Hindi output.
+
+\paragraph{Residual no-op sentences.}
+Example 4 contains no tokens from the distributional lexicons (D = N), so its
+COMET Distrib equals COMET Orig exactly. This represents the 21.7\% of
+sentences that escape distributional perturbation and \textbf{slightly
+attenuate corpus-level distributional shift scores} in Table~\ref{tab:main}.
+
+% =============================================================================
+\section{Critical Discussion}
+
+\subsection{Metric Robustness and Fragility}
+
+\textbf{BLEU is the most fragile metric} under every condition. Its
+word-boundary n-gram precision is mechanistically incompatible with Devanagari
+morphology: a single corrupted input character can prevent a proper noun
+transliteration from producing any matching n-gram, zeroing out all overlapping
+counts. The $-32.0\%$ drop for MarianMT under surface perturbation is $1.8\times$
+larger than the chrF++ drop and $2.5\times$ larger than the COMET drop for
+the same condition.
+
+\textbf{chrF++} is the best-calibrated metric for this language pair.
+Its character-level operation naturally tolerates inflectional variation and
+single-character perturbations, and its 95\% CIs at the evaluated sample size
+are narrow enough to statistically separate adjacent conditions. It is the
+recommended metric for iterative Indic MT development.
+
+\textbf{COMET-DA} offers the highest human alignment and most stable noise
+estimates, but carries two documented structural limitations: a \textbf{non-zero
+score floor} ($\approx 0.30$--$0.35$) for catastrophically failed translations,
+and a \textbf{length bias} that reflects model quality properties rather than
+a metric artefact (Table~\ref{tab:pearson}).
+
+\subsection{Metric Distortion Under Noise}
+
+The direction of distortion depends on noise severity. Under \textbf{mild
+surface corruption}, BLEU overestimates degradation while COMET correctly
+assigns near-original scores. Under \textbf{severe multi-token corruption},
+COMET underestimates degradation due to its non-zero floor. For
+\textbf{distributional shift}, all metrics are consistent in direction but
+corpus-level drops are attenuated by the residual no-op sentence rate.
+\textbf{No single metric is universally superior}; a BLEU plus COMET
+combination provides the most complete robustness picture.
+
+\subsection{All Metrics Are Insensitive to Register}
+
+Distributional degradation is consistently smaller than surface degradation
+for every model-metric pair. None of the three metrics can determine whether a
+translation appropriately matches the \textbf{register or style} of a shifted
+input: if a formal and a colloquial source both produce plausible Hindi
+paraphrases of the same reference, all three metrics assign identical scores.
+\textbf{Human evaluation remains essential} for style-sensitive and
+fairness-critical NLP applications.
+
+% =============================================================================
+\section{Conclusions}
+
+BLEU, chrF++, and COMET-DA were evaluated across three En$\to$Hi MT models
+under clean, surface-perturbed, and distribution-shifted conditions, with a
+reference-free bias analysis across five probe categories.
+
+\begin{enumerate}
+  \item \textbf{Surface fragility hierarchy: BLEU $>$ chrF++ $>$ COMET.}
+    Drops of 15--32\%, 8.5--18.3\%, and 5.6--12.9\% respectively under
+    surface noise, consistent across all models and confirmed by
+    non-overlapping bootstrap confidence intervals.
+
+  \item \textbf{Distributional shift degrades all metrics measurably.}
+    BLEU drops 6.7--19.8\% and COMET drops 3.1--7.6\%; surface
+    perturbations remain more damaging in absolute terms throughout.
+
+  \item \textbf{IndicTrans2 is the most robust model.}
+    Highest scores and lowest segment-level variance ($\sigma = 0.079$).
+    MarianMT is the most inconsistent ($\sigma = 0.157$) and sustains the
+    largest degradation under both perturbation types.
+
+  \item \textbf{No gender bias detected; code-mixing is the primary fairness
+    risk.} Gender COMET-QE gap = 0.0015 ($p = 0.213$, non-significant).
+    Hinglish code-mixed gap = $-0.0298$ -- $20\times$ larger -- with high
+    within-category variance ($\sigma = 0.054$).
+
+  \item \textbf{Length bias is model-intrinsic.}
+    Pearson $r$ is stable across all three dataset variants within each
+    model, ruling out a metric-perturbation interaction.
+\end{enumerate}
+
+\noindent\textbf{Recommendation.} Use \textbf{chrF++} for development-cycle
+evaluation (computationally free, robust, Devanagari-appropriate) and
+\textbf{COMET-DA} with segment-level $\sigma$ reporting for final evaluation.
+Include BLEU for reproducibility only; never interpret it in isolation for
+morphologically rich target languages.
+
+\end{document}

@@ -1,0 +1,10 @@
+Model,Variant,BLEU,BLEU_CI_lo,BLEU_CI_hi,chrF,chrF_CI_lo,chrF_CI_hi,COMET,COMET_std
+marian,Original,10.47,9.13,11.73,30.95,29.32,32.33,0.6032,0.1574
+marian,Surface-Perturbed,7.12,6.12,8.17,25.28,23.85,26.73,0.5255,0.1317
+marian,Distribution-Shifted,8.4,7.27,9.58,28.35,26.97,29.6,0.5573,0.1421
+nllb,Original,22.65,20.99,24.4,48.67,47.2,50.25,0.8071,0.0854
+nllb,Surface-Perturbed,19.2,17.59,20.97,44.52,42.72,46.2,0.7619,0.1024
+nllb,Distribution-Shifted,20.89,19.19,22.68,46.87,45.35,48.38,0.7824,0.1013
+indictrans,Original,26.05,24.07,27.89,51.38,49.81,52.94,0.8214,0.0789
+indictrans,Surface-Perturbed,20.48,18.76,22.21,45.72,44.31,47.2,0.7612,0.0985
+indictrans,Distribution-Shifted,24.31,22.54,26.14,49.58,48.08,51.2,0.7905,0.0944
